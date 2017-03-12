@@ -10,7 +10,9 @@
 import pycurl, json
 import pprint
 from io import BytesIO
+import unittest
 
+# Function to grab all the transactions from the server using a REST API like transaction
 def getAllTransactions():
     cofiURL = 'https://2016.api.levelmoney.com/api/v2/core/get-all-transactions'
     postData = json.dumps({"args": {"uid": 1110590645, "token": "61452E2839011A3A3D2B9B97A3FA3843", "api-token": "AppTokenForInterview", "json-strict-mode": False, "json-verbose-response": False}})
@@ -27,7 +29,43 @@ def getAllTransactions():
 
 #----------- begin main!!
 
-jsonData = getAllTransactions()
-pprint.pprint(jsonData)
+# Maximum number of transactions to process
+MAXIMUM_TRANSACTIONS = 100000
 
+jsonData = getAllTransactions()
+
+# dictionaries for each transaction type to test
+accountIncome = {}
+accountExpenses = {}
+accountExpensesDonuts = {}
+currentAmount=0
+
+# loop through the data and grab the items needed create the summary report
+# I thought about importing this into SQL and using SQL statements but both methods will be just as easy to implement
+# Loop through until we hit the end
+for i in range (0,MAXIMUM_TRANSACTIONS):
+    try:
+        transactionData = jsonData["transactions"][i]
+    except:
+        print("Number of records", i)
+        break
+
+    amount = transactionData.get("amount")
+    month = transactionData.get("transaction-time")[:7]
+    print (amount, month)
+
+    # Summarize each of the transactions based on the amount
+    if (amount > 0):
+        currentAmount = accountIncome.get(month, 0)+ amount
+        accountIncome.update({month : currentAmount} )
+    else:
+        currentAmount = accountExpenses.get(month, 0) + amount
+        accountExpenses.update({month : currentAmount})
+
+    # Grab the 'Donut' transactions - reading through the data we need to grab the "Dunkin and Krispy Kreme Donuts" vendors
+
+
+#temporary printing while coding
+pprint.pprint( accountExpenses.items())
+pprint.pprint( accountIncome.items())
 
