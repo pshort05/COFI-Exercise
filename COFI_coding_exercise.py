@@ -52,7 +52,8 @@ for i in range (0,MAXIMUM_TRANSACTIONS):
 
     amount = transactionData.get("amount")
     month = transactionData.get("transaction-time")[:7]
-    print (amount, month)
+    merchant = transactionData.get("merchant")
+    print (amount, month, merchant)
 
     # Summarize each of the transactions based on the amount
     if (amount > 0):
@@ -63,9 +64,12 @@ for i in range (0,MAXIMUM_TRANSACTIONS):
         accountExpenses.update({month : currentAmount})
 
     # Grab the 'Donut' transactions - reading through the data we need to grab the "Dunkin and Krispy Kreme Donuts" vendors
+    if ("DUNKIN" in merchant) or ("Donut" in merchant):
+        currentAmount = accountExpensesDonuts.get(month, 0)+ amount
+        accountExpensesDonuts.update({month : currentAmount} )
 
 
 #temporary printing while coding
 pprint.pprint( accountExpenses.items())
 pprint.pprint( accountIncome.items())
-
+pprint.pprint( accountExpensesDonuts.items())
