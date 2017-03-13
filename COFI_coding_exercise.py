@@ -10,6 +10,7 @@
 import pycurl, json
 import pprint
 from io import BytesIO
+import sys
 import unittest
 
 # TODO: move these functions into a class - this is a short exercise but the class would be more useful if this gets expanded
@@ -49,6 +50,7 @@ def getFutureTransactions():
 # Maximum number of transactions to process
 MAXIMUM_TRANSACTIONS = 100000
 
+# get all the transaction data
 jsonData = getAllTransactions()
 futureData = getFutureTransactions()
 
@@ -60,11 +62,17 @@ accountCCPayments = {}
 accountCCExpenses = {}
 accountFutureExpenses = {}
 currentAmount=0
+
 # used to save the first and last month in the series - for now it will assume that the transactions are in order by date
 # additional code should be put in place to handle out of order transactions
 monthBegin = ''
 monthEnd = ''
 month = ''
+
+# items to calculate the average expenses and income - since we are walking through all transactions we will use this to
+# to calculate the data rather then running through the data a second time
+# calcuation used to determine the "average" income and expenses :  simple average calculation with the max and min removed
+
 
 # loop through the data and grab the items needed create the summary report
 # I thought about importing this into SQL and using SQL statements but both methods will be just as easy to implement
@@ -75,7 +83,7 @@ for i in range (0,MAXIMUM_TRANSACTIONS):
     except:
         #save the last month of the transactions
         monthEnd = month
-        print("Number of records:", i, "First Month:", monthBegin, "Last Month:", monthEnd)
+        #print("Number of records:", i, "First Month:", monthBegin, "Last Month:", monthEnd)
         break
 
     amount = transactionData.get("amount")/10000
@@ -106,16 +114,36 @@ for i in range (0,MAXIMUM_TRANSACTIONS):
         currentAmount = accountCCPayments.get(month, 0)+ amount
         accountCCPayments.update({month : round(currentAmount, 2)} )
 
+# Process the expected transactions
 for i in range (0, MAXIMUM_TRANSACTIONS):
     pass
 
+# Print all the data out now that it's collected
+# Print out the transactions in a ledger like format
+# Convert the dates in to numbers that can be used in for statements
+startYear = int(monthBegin[:4])
+endYear = int(monthEnd[:4])
+expenseSum = 0
+incomeSum = 0
+numMonths = 0
+#print (startYear, endYear)
 
 
-# TODO Add in the calcuations after all the data is loaded
+print( "Month   Expenses  Income   Donuts  CreditCard")
+print( "-----   --------  ------   ------  ----------")
+# walk through all the possible months from the start to end - note there are extra in the first and last year using this method
+for yr in range (startYear, endYear+1):
+    for mn in range ( 1, 13):
+        tmpYear = str(yr).zfill(4) + "-" + str(mn).zfill(2)
+        tmpExpense = accountExpenses.get(tmpYear, 0)
+        tmpIncome = accountIncome.get(tmpYear, 0)
+        if( (tmpExpense != 0) and (tmpIncome!=0) ):
+            # TODO : this won't work if there is a month with no income or expenses, but the data did not have that so it will work for the demo
+            expenseSum += tmpExpense
+            incomeSum += tmpIncome
+            numMonths += 1
+            print( tmpYear, "$%.2f" % accountExpenses.get(tmpYear,0), "$%.2f" % accountIncome.get(tmpYear,0), "$%06.2f" % accountExpensesDonuts.get(tmpYear,0), "$%07.2f" % accountCCPayments.get(tmpYear,0) )
+print ( "Average", "$%.2f" % (expenseSum/numMonths), "$%.2f" % (incomeSum/numMonths) )
 
-#temporary printing while coding
-pprint.pprint( accountExpenses.items())
-pprint.pprint( accountIncome.items())
-pprint.pprint( accountExpensesDonuts.items())
-pprint.pprint( accountCCExpenses.items())
-pprint.pprint( accountCCPayments.items())
+
+
