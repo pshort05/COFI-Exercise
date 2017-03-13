@@ -4,7 +4,7 @@
 #
 #                               COFI_coding_exercise.py     by Paul Short
 #                                                           paul@jpkweb.com
-#                                                           using Python v3.6
+#                                                           using Python v3.6 and PyCharm CE IDE for development
 #
 # ----------------------------------------------------------------------------------------------------------------------
 import pycurl, json
@@ -14,6 +14,7 @@ import sys
 import unittest
 
 # TODO: move these functions into a class - this is a short exercise but the class would be more useful if this gets expanded
+# TODO: move all of these hard coded items into a config file for future updates
 
 # Function to grab all the transactions from the server using a REST API like transaction
 def getAllTransactions():
@@ -45,18 +46,28 @@ def getFutureTransactions():
     return json.loads(buffer.getvalue())
 
 
-# ----------- begin main!! -----------
+# ----------- begin main processing -----------
 
 # Maximum number of transactions to process
 MAXIMUM_TRANSACTIONS = 100000
 
 # get all the transaction data
+# TODO: right now it downloads all the data each time - this should be cached if this will be used on a regular basis
+print('Downloading all transactions..', end='', flush=True)
 jsonData = getAllTransactions()
-futureData = getFutureTransactions()
+print('..Done', flush=True)
+
+# only download the pending transactions if necessary
+if( "--crystal-ball" in sys.argv ):
+    print('Downloading all pending transactions..', end='', flush=True)
+    futureData = getFutureTransactions()
+    print('..Done\n', flush=True)
 
 # dictionaries for each transaction type to test
 accountIncome = {}
+accountPendingIncome = {}
 accountExpenses = {}
+accountPendingExpenses = {}
 accountExpensesDonuts = {}
 accountCCPayments = {}
 accountCCExpenses = {}
@@ -110,13 +121,37 @@ for i in range (0,MAXIMUM_TRANSACTIONS):
     elif ( "Credit Card Payment" in merchant ):
         currentAmount = accountCCExpenses.get(month, 0)+ amount
         accountCCExpenses.update({month : round(currentAmount, 2)} )
+        if ("--display-cc-payments" in sys.argv):
+            print( transactionData.get("transaction-time")[:10], merchant, round(currentAmount, 2))
     elif ( "CC Payment" in merchant ):
         currentAmount = accountCCPayments.get(month, 0)+ amount
         accountCCPayments.update({month : round(currentAmount, 2)} )
+        if ("--display-cc-payments" in sys.argv):
+            print(transactionData.get("transaction-time")[:10], merchant, round(currentAmount, 2))
 
-# Process the expected transactions
-for i in range (0, MAXIMUM_TRANSACTIONS):
-    pass
+# Process the expected transactions if necessary
+if( "--crystal-ball" in sys.argv):
+    # TODO : this will work with the sample data, but we really should calcuate the start and end months to compare to transaction data
+    for i in range (0, MAXIMUM_TRANSACTIONS):
+        try:
+            futureData = futureData["transactions"][i]
+        except:
+            #save the last month of the transactions
+            #print("Number of records:", i, "First Month:", monthBegin, "Last Month:", monthEnd)
+            pass
+            break
+        amount = futureData.get("amount")/10000
+        month = futureData.get("transaction-time")[:7]
+        #print (round(amount, 2), month, merchant)
+
+        # Summarize each of the transactions based on the amount
+        if (amount > 0):
+            currentAmount = accountPendingIncome.get(month, 0)+ amount
+            accountPendingIncome.update({month : round(currentAmount, 2)} )
+        else:
+            currentAmount = accountPendingExpenses.get(month, 0) + amount
+            accountPendingExpenses.update({month : round(currentAmount, 2)})
+
 
 # Print all the data out now that it's collected
 # Print out the transactions in a ledger like format
@@ -129,21 +164,51 @@ numMonths = 0
 #print (startYear, endYear)
 
 
-print( "Month   Expenses  Income   Donuts  CreditCard")
-print( "-----   --------  ------   ------  ----------")
+# This will print out the data depending on the command line options
+# TODO : this would be best served in a function
+if( "--ignore-donuts" in sys.argv ):
+    print( "\n  Month  Expenses   Income  Donuts ")
+    print( "------- --------- -------- ------- ")
+elif ("--ignore-cc-payments" in sys.argv):
+    print( "\n  Month  Expenses   Income  CreditCard")
+    print( "------- --------- -------- ----------")
+elif( "--crystal-ball" in sys.argv):
+    print( "\n  Month  Expenses   Income Pending Exp  Pending Inc")
+    print( "------- --------- -------- ----------   ----------")
+else:
+    print("\n  Month  Expenses   Income  Donuts CreditCard")
+    print("------- --------- -------- ------- ----------")
+
 # walk through all the possible months from the start to end - note there are extra in the first and last year using this method
 for yr in range (startYear, endYear+1):
     for mn in range ( 1, 13):
         tmpYear = str(yr).zfill(4) + "-" + str(mn).zfill(2)
         tmpExpense = accountExpenses.get(tmpYear, 0)
         tmpIncome = accountIncome.get(tmpYear, 0)
+        tmpCCExpenses = accountCCExpenses.get(tmpYear,0)
+        tmpCCPayments = accountCCPayments.get(tmpYear,0)
+        tmpDonuts = accountExpensesDonuts.get(tmpYear,0)
         if( (tmpExpense != 0) and (tmpIncome!=0) ):
             # TODO : this won't work if there is a month with no income or expenses, but the data did not have that so it will work for the demo
-            expenseSum += tmpExpense
-            incomeSum += tmpIncome
             numMonths += 1
-            print( tmpYear, "$%.2f" % accountExpenses.get(tmpYear,0), "$%.2f" % accountIncome.get(tmpYear,0), "$%06.2f" % accountExpensesDonuts.get(tmpYear,0), "$%07.2f" % accountCCPayments.get(tmpYear,0) )
+            if( "--ignore-donuts" in sys.argv ):
+                expenseSum += (tmpExpense-tmpDonuts)
+                incomeSum += tmpIncome
+                print( tmpYear, "$%.2f" % (tmpExpense-tmpDonuts), "$%.2f" % tmpIncome, "$%06.2f" % accountExpensesDonuts.get(tmpYear,0))
+            elif( "--ignore-cc-payments" in sys.argv ):
+                expenseSum += (tmpExpense-tmpCCPayments)
+                incomeSum += (tmpIncome-tmpCCExpenses)
+                print( tmpYear, "$%.2f" % (tmpExpense-tmpCCPayments), "$%.2f" % (tmpIncome-tmpCCExpenses), "$%07.2f" % accountCCPayments.get(tmpYear,0) )
+            elif( "--crystal-ball" in sys.argv):
+                expenseSum += tmpExpense
+                incomeSum += tmpIncome
+                print( tmpYear, "$%.2f" % accountExpenses.get(tmpYear,0), "$%.2f" % accountIncome.get(tmpYear,0), "$%8.2f" % accountPendingExpenses.get(tmpYear,0), '  ', "$%8.2f" % accountPendingIncome.get(tmpYear,0))
+            else:
+                expenseSum += tmpExpense
+                incomeSum += tmpIncome
+                print( tmpYear, "$%.2f" % accountExpenses.get(tmpYear,0), "$%.2f" % accountIncome.get(tmpYear,0), "$%06.2f" % accountExpensesDonuts.get(tmpYear,0), "$%07.2f" % accountCCPayments.get(tmpYear,0) )
+print( "===============================================")
 print ( "Average", "$%.2f" % (expenseSum/numMonths), "$%.2f" % (incomeSum/numMonths) )
-
+print ( " ")
 
 
