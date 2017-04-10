@@ -18,8 +18,8 @@ import unittest
 
 # Function to grab all the transactions from the server using a REST API like transaction
 def getAllTransactions():
-    cofiURL = 'https://2016.api.levelmoney.com/api/v2/core/get-all-transactions'
-    postData = json.dumps({"args": {"uid": 1110590645, "token": "61452E2839011A3A3D2B9B97A3FA3843", "api-token": "AppTokenForInterview", "json-strict-mode": False, "json-verbose-response": False}})
+    cofiURL = 'xxxxx'
+    postData = json.dumps({"args": {"uid": xxxxx, "token": "xxxxx", "api-token": "AppTokenForInterview", "json-strict-mode": False, "json-verbose-response": False}})
     buffer = BytesIO()
     c = pycurl.Curl()
     c.setopt(c.URL, cofiURL)
@@ -33,8 +33,8 @@ def getAllTransactions():
 # I just duplicated the code to get the future transacations
 # TODO: create a generic transaction with variable URL, POST and HEADER
 def getFutureTransactions():
-    cofi_url = 'https://2016.api.levelmoney.com/api/v2/core/projected-transactions-for-month'
-    postData = json.dumps({"args": {"uid": 1110590645, "token": "61452E2839011A3A3D2B9B97A3FA3843", "api-token": "AppTokenForInterview", "json-strict-mode": False, "json-verbose-response": False}, "year": 2017, "month": 3})
+    cofi_url = 'xxxxx'
+    postData = json.dumps({"args": {"uid": xxxxx, "token": "xxxxx", "api-token": "AppTokenForInterview", "json-strict-mode": False, "json-verbose-response": False}, "year": 2017, "month": 3})
     buffer = BytesIO()
     c = pycurl.Curl()
     c.setopt(c.URL, cofi_url)
